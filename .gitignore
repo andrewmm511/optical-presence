@@ -1,0 +1,6 @@
+/.vscode
+/.ipynb_checkpoints
+/__pycache__
+/venv
+/Untitled (1).ipynb
+*.DS_store

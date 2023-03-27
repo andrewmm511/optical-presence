@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Face Trainer</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #383c4a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        .card {
+            background-color: #484f58;
+            border: none;
+            box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.12), 0 1px 5px 0 rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            background-color: #00d8d2;
+            border-bottom: none;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+
+        .card-title {
+            color: #ffffff;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-control {
+            background-color: #59636b;
+            color: #ffffff;
+        }
+
+        .form-control::placeholder {
+            color: #a0a0a0;
+        }
+
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .upload-btn-wrapper input[type="file"] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: #00d8d2;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: #00b8b2;
+            color: #ffffff;
+        }
+
+        .btn-secondary {
+            background-color: #00458c;
+            color: #ffffff;
+        }
+
+        .btn-secondary:hover {
+            background-color: #003268;
+            color: #ffffff;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: #ffffff;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            color: #ffffff;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            color: #ffffff;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-left-color: #00d8d2;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #waiting-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        #waiting-screen .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="text-center mt-5">
+            <h1 class="title">Face Trainer</h1>
+            <p>Train your model to recognize faces.</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Enter Names and Upload Images</h5>
+            </div>
+            <div class="card-body">
+                <form id="faces-form" action="/test/" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div id="name-inputs">
+                        <div class="input-group mb-2">
+                            <input type="text" name="names" class="form-control" placeholder="Enter a name" required>
+                            <button type="button" class="btn btn-danger remove-name-input"
+                                style="display:none;">&times;</button>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-3">
+                        <button type="button" class="btn btn-secondary" id="add-name-input">Add another name</button>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="upload-btn-wrapper">
+                            <button id="upload-button" class="btn btn-primary" type="button">
+                                <i class="fas fa-upload"></i> Upload images
+                            </button>
+                            <input type="file" name="folder" multiple id="image-input">
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <button type="submit" class="btn btn-success" id="submit-button" disabled>Train model</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="waiting-screen">
+            <div class="content">
+                <div class="spinner"></div>
+                <p>Processing images, please wait...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("faces-form").addEventListener("submit", function () {
+            document.getElementById("waiting-screen").style.display = "block";
+        });
+
+        document.getElementById("image-input").addEventListener("change", function () {
+            const files = this.files;
+            if (files.length > 0) {
+                document.getElementById("upload-button").innerHTML = `<i class="fas fa-upload"></i> ${files.length} files selected`;
+                document.getElementById("submit-button").disabled = false;
+            } else {
+                document.getElementById("upload-button").innerHTML = '<i class="fas fa-upload"></i> Upload images';
+                document.getElementById("submit-button").disabled = true;
+            }
+        });
+
+        document.getElementById("upload-button").addEventListener("click", function () {
+            document.getElementById("image-input").click();
+        });
+
+        document.getElementById("add-name-input").addEventListener("click", function () {
+            const nameInput = document.createElement("div");
+            nameInput.classList.add("input-group", "mb-2");
+            nameInput.innerHTML = `
+                <input type="text" name="names" class="form-control" placeholder="Enter a name" required>
+                <button type="button" class="btn btn-danger remove-name-input">&times;</button>
+            `;
+
+            document.getElementById("name-inputs").appendChild(nameInput);
+            updateRemoveButtonVisibility();
+        });
+
+        document.getElementById("name-inputs").addEventListener("click", function (event) {
+            if (event.target.classList.contains("remove-name-input")) {
+                event.target.parentElement.remove();
+                updateRemoveButtonVisibility();
+            }
+        });
+
+        function updateRemoveButtonVisibility() {
+            const removeButtons = document.getElementsByClassName("remove-name-input");
+            for (let i = 0; i < removeButtons.length; i++) {
+                removeButtons[i].style.display = removeButtons.length > 1 ? "block" : "none";
+            }
+        }
+
+        updateRemoveButtonVisibility();
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+</body>
+
+</html>

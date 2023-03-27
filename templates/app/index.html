@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optical Presence - Get Started</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1c1e29;
+            font-family: Arial, sans-serif;
+        }
+
+        .card {
+            width: 80%;
+            max-width: 800px;
+            background-color: #2e3141;
+            color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+        }
+
+        header {
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: #00d8d2;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        main ol {
+            counter-reset: step;
+            padding-inline-start: 0;
+        }
+
+        main li {
+            list-style-type: none;
+            position: relative;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        main li:before {
+            content: counter(step);
+            counter-increment: step;
+            font-size: 1.5rem;
+            color: #00d8d2;
+            position: absolute;
+            left: -50px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #00d8d2;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .button:hover {
+            background-color: #00c0b9;
+        }
+
+        .skip {
+            background-color: #00458c;
+            transition: background-color 0.2s;
+        }
+
+        .skip:hover {
+            background-color: #003874;
+        }
+
+        #page-1 {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .slide-out {
+            animation: slideOut 0.5s ease-in-out forwards;
+        }
+
+        @keyframes slideOut {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="page-1">
+        <div class="card">
+            <header>
+                <h1>Optical Presence</h1>
+                <p>Set up your smart home presence tracker!</p>
+            </header>
+            <main>
+                <ol>
+                    <li>
+                        <h2>Specify Names</h2>
+                        <p>Enter the names of the people in your household.</p>
+                    </li>
+                    <li>
+                        <h2>Upload Photos</h2>
+                        <p>Upload clear, well-lit images of each household member.</p>
+                    </li>
+                    <li>
+                        <h2>Classify Images</h2>
+                        <p>Select whose face is whose</p>
+                    </li>
+                    <li>
+                        <h2>Train Model</h2>
+                        <p>Our system will automatically build a deep neural net model to recognize faces.</p>
+                    </li>
+                    <li>
+                        <h2>Register Cameras</h2>
+                        <p>Connect your home cameras to Optical Presence for real-time location tracking.</p>
+                    </li>
+                </ol>
+                <div class="button-container">
+                    <a href="javascript:void(0)" class="button" onclick="goToNextPage()">Get Started</a>
+                    <a href="/dashboard" class="button skip">Skip to Dashboard</a>
+                </div>
+            </main>
+
+        </div>
+    </div>
+    <script>
+        function goToNextPage() {
+            const page1 = document.getElementById('page-1');
+            page1.classList.add('slide-out');
+
+            setTimeout(() => {
+                window.location.href = '/register_people';
+            }, 500);
+        }
+    </script>
+</body>
+
+</html>

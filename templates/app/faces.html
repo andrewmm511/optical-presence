@@ -1,0 +1,291 @@
+{% load mathfilters %}
+{% load static %}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Face Recognition</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1c1e29;
+        }
+
+        .card {
+            width: 400px;
+            border: none;
+            background-color: #2e3141;
+            color: #ffffff;
+        }
+
+        .progress {
+            height: 10px;
+        }
+
+        .progress-bar {
+            background-color: #00d8d2;
+        }
+
+        .image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            background-color: #393b50;
+            padding: 15px;
+            border: 5px solid #2e3141;
+            border-radius: 8px;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2) inset;
+        }
+
+        .btn-group {
+            width: 100%;
+        }
+
+        .btn-primary {
+            background-color: #00d8d2;
+            border-color: #00d8d2;
+        }
+
+        .btn-primary:hover {
+            background-color: #00c0b9;
+            border-color: #00c0b9;
+        }
+
+        .btn-secondary {
+            background-color: #00458c;
+            border-color: #00458c;
+        }
+
+        .btn-secondary:hover {
+            background-color: #003874;
+            border-color: #003874;
+        }
+
+        .sub-cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-items: flex-start;
+            gap: 15px;
+            margin-left: 30px;
+        }
+
+        .sub-card {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #00d8d2;
+            background-color: #2e3141;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .sub-card span {
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            background-color: #00d8d2;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+
+        @keyframes crumple {
+            0% {
+                transform: rotate(0deg) scale(1) translateY(0);
+                opacity: 1;
+            }
+
+            50% {
+                transform: rotate(-20deg) scale(0.9) translateY(-10px);
+                opacity: 1;
+            }
+
+            100% {
+                transform: rotate(0deg) scale(0.2) translateY(-200px);
+                opacity: 0;
+            }
+        }
+
+        .crumpled {
+            animation: crumple 0.3s linear forwards;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-header">
+            <div class="progress">
+                {% with progress=1|sub:extracted_faces_paths|length|div:total_faces %}
+                <div class="progress-bar" role="progressbar" style="width: {{ progress|mul:100 }}%;"
+                    aria-valuenow="{{ progress|mul:100 }}" aria-valuemin="0" aria-valuemax="100"
+                    data-total-faces="{{ total_faces }}"></div>
+                {% endwith %}
+            </div>
+            <div class="card-body image-container">
+                <img src="/{{ current_image }}" alt="Extracted face">
+            </div>
+            <div class="card-footer">
+                <form id="face-form" action="/faces" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="current_image" value="{{ current_image }}">
+                    <input type="hidden" name="selected_name" id="selected-name" value="">
+                    <div class="btn-group">
+                        {% for name in name_list %}
+                        <button type="submit" name="name_button" value="{{ name }}" class="btn btn-primary">{{ name
+                            }}</button>
+                        {% endfor %}
+                        <button type="submit" name="name_button" value="neither"
+                            class="btn btn-secondary">Neither</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="sub-cards-container">
+        </div>
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+            $(document).ready(function () {
+                let clickedButtonValue;
+                const csrftoken2 = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                async function submitForm(selectedName, currentImage) {
+                    const response = await fetch("/faces/", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrftoken2,
+                        },
+                        body: JSON.stringify({
+                            selected_name: selectedName,
+                            current_image: currentImage,
+                        }),
+                    });
+                    console.log("Response status:", response.status);
+                    return response.json();
+                }
+
+                function animateImage(imgClone, targetPosition) {
+                    imgClone.animate({
+                        top: targetPosition.top,
+                        left: targetPosition.left,
+                        width: "100px",
+                        height: "100px",
+                        "border-radius": "50%",
+                    });
+                }
+
+                function updateSubCard(selectedName) {
+                    const subCard = $(`.sub-card[data-name='${selectedName}']`);
+                    let targetPosition;
+
+                    if (subCard.length === 0) {
+                        // Create a new sub-card if it doesn't exist
+                        $(".sub-cards-container").append(`<div class="sub-card" data-name="${selectedName}"><span>1</span></div>`);
+                        targetPosition = $(`.sub-card[data-name='${selectedName}']`).offset();
+                    } else {
+                        targetPosition = subCard.offset();
+                        const count = parseInt(subCard.find("span").text()) + 1;
+                        subCard.find("span").text(count);
+                    }
+
+                    return targetPosition;
+                }
+
+                function processResponse(data) {
+                    if (data.status === "success") {
+                        location.reload();  // Reload the page if all faces have been processed
+                    } else {
+                        $(".image-container img").attr("src", data.next_image_url);  // Update the main image with the next face
+                        $("#face-form input[name='current_image']").val(data.next_image_url);
+
+                        // Calculate the new progress percentage
+                        const totalFaces = parseInt($(".progress-bar").data("total-faces"), 10);  // Get the total number of faces from the context
+                        const remainingImages = data.extracted_faces_paths.length;
+                        const progress = 1 - (remainingImages / totalFaces);
+
+                        // Update the progress bar
+                        $(".progress-bar")
+                            .css("width", (progress * 100) + "%")
+                            .attr("aria-valuenow", progress * 100);
+
+                    }
+                }
+
+                $("#face-form").on("submit", async function (e) {
+                    e.preventDefault();
+
+                    clickedButtonValue = $(document.activeElement).val(); // Get the clicked button's value
+                    const selectedName = clickedButtonValue;
+                    const currentImage = $("input[name='current_image']").val();
+                    const img = $(".image-container img");
+                    const form = $(this); // Store the reference to the form
+
+                    if (selectedName === "neither") {
+                        img.addClass("crumpled");
+                        setTimeout(async () => {
+                            img.removeClass("crumpled");
+
+                            const response = await submitForm(selectedName, currentImage);
+                            processResponse(response);
+                        }, 300);
+                        return;
+                    }
+
+                    const imgClone = img.clone().attr('src', img.attr('src'));
+                    const imgOffset = img.offset();
+                    const targetPosition = updateSubCard(selectedName);
+
+                    imgClone.css({
+                        position: "absolute",
+                        top: imgOffset.top,
+                        left: imgOffset.left,
+                        width: img.width(),
+                        height: img.height(),
+                        "z-index": 1000,
+                        "border-radius": "4px",
+                        "box-shadow": "0 0 10px rgba(0, 0, 0, 0.2) inset",
+                    }).appendTo("body");
+
+                    img.css("visibility", "hidden");
+
+                    animateImage(imgClone, targetPosition);
+
+                    imgClone.promise().done(async function () {
+                        imgClone.remove();
+                        const response = await submitForm(selectedName, currentImage);
+                        img.css("visibility", "visible");
+                        processResponse(response);
+                    });
+                });
+            });
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+
+</body>
+
+</html>
