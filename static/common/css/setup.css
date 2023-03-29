@@ -1,0 +1,21 @@
+.card {
+    width: 80%;
+    max-width: 800px;
+    background-color: #2e3141;
+    color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+}
+
+header {
+    text-align: center;
+}
+
+header h1 {
+    font-size: 2.5rem;
+}
+
+header p {
+    font-size: 1.2rem;
+    color: #00d8d2;
+}

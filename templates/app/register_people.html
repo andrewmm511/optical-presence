@@ -1,517 +1,231 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "common/setup_flow/setup.html" %}
+{% load custom_tags %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optical Presence - Register Household Members</title>
-    <style>
-        @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+{% block css %}
+{{ block.super }}
+<style>
+    .form-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+    }
 
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #1c1e29;
-            font-family: Arial, sans-serif;
-        }
+    input[type="text"] {
+        padding: 12px;
+        width: 100%;
+        max-width: 300px;
+        background-color: #393b50;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
 
-        .card {
-            width: 80%;
-            max-width: 800px;
-            background-color: #2e3141;
-            color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
+    .btn-add {
+        padding: 12px 24px;
+        background-color: #00d8d2;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: background-color 0.2s;
+        cursor: pointer;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
 
-        header {
-            text-align: center;
-        }
+    .btn-add:hover {
+        background-color: #00c0b9;
+    }
 
-        header h1 {
-            font-size: 3rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
+    .button-container {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin-top: 20px;
+    }
 
-        header p {
-            font-size: 1.2rem;
-            color: #00d8d2;
-            font-weight: 300;
-        }
+    .button {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #00d8d2;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 6px;
+        transition: background-color 0.2s;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
 
-        .form-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 20px;
-        }
+    .button:hover {
+        background-color: #00c0b9;
+    }
 
-        input[type="text"] {
-            padding: 12px;
-            width: 100%;
-            max-width: 300px;
-            background-color: #393b50;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
+    .member-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-start;
+        align-items: center;
+        width: 100%;
+        margin-top: 20px;
+        padding-bottom: 10px;
+    }
 
-        .btn-add {
-            padding: 12px 24px;
-            background-color: #00d8d2;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: background-color 0.2s;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
+    .member {
+        background-color: #393b50;
+        border-radius: 8px;
+        padding: 15px;
+        font-size: 1rem;
+        margin: 5px;
+        transform: translateY(20px);
+        animation: fadeInUp 0.5s ease-out forwards;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
-        .btn-add:hover {
-            background-color: #00c0b9;
-        }
+    .avatar {
+        width: 80px;
+        height: 80px;
+        background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="%23FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Ccircle cx="12" cy="12" r="11" /%3E%3Cpath d="M12 12c3.333 0 6 2.374 6 5.303v1.697H6v-1.697C6 14.374 8.667 12 12 12zm0-4a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" /%3E%3C/svg%3E');
+        background-size: cover;
+        border-radius: 50%;
+        margin-bottom: 10px;
+        border: 3px solid #00d8d2;
+    }
 
-        .member-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: flex-start;
-            align-items: center;
-            width: 100%;
-            margin-top: 20px;
-            padding-bottom: 10px;
-        }
+    .name {
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #ffffff;
+        margin-bottom: 6px;
+    }
 
-        .member {
-            background-color: #393b50;
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 1rem;
-            margin: 5px;
-            transform: translateY(20px);
-            animation: fadeInUp 0.5s ease-out forwards;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    .info {
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+        color: #b0b0b0;
+        font-weight: 300;
+        text-align: center;
+        margin-bottom: 4px;
+        gap: 4px;
+    }
 
+    .info-icon {
+        font-size: 1.1rem;
+        color: #00d8d2;
+    }
 
-        .avatar {
-            width: 80px;
-            height: 80px;
-            background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="%23FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Ccircle cx="12" cy="12" r="11" /%3E%3Cpath d="M12 12c3.333 0 6 2.374 6 5.303v1.697H6v-1.697C6 14.374 8.667 12 12 12zm0-4a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" /%3E%3C/svg%3E');
-            background-size: cover;
-            border-radius: 50%;
-            margin-bottom: 10px;
-            border: 3px solid #00d8d2;
-        }
-
-        .status {
-            display: flex;
-            flex-direction: column;
-            font-family: 'Roboto', sans-serif;
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-
-        .name {
-            font-size: 1.2rem;
-            font-weight: 500;
-            color: #ffffff;
-            margin-bottom: 6px;
-        }
-
-        .info {
-            display: flex;
-            align-items: center;
-            font-size: 0.9rem;
-            color: #b0b0b0;
-            font-weight: 300;
-            text-align: center;
-            margin-bottom: 4px;
-            gap: 4px;
-        }
-
-        .info:last-child {
-            margin-bottom: 0;
-        }
-
-        .info-icon {
-            font-size: 1.1rem;
-            color: #00d8d2;
-        }
-
-        .status-line {
-            margin: 4px 0;
-            color: #b0b0b0;
-            font-weight: 300;
-        }
-
-        .status-line:first-child {
-            font-size: 20px;
-            font-weight: 500;
-            color: #ffffff;
-            text-decoration: underline;
-            margin-bottom: 10px;
-        }
-
-        .status-line:last-child {
-            text-decoration: none;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #00d8d2;
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: background-color 0.2s;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        .button:hover {
-            background-color: #00c0b9;
-        }
-
-        #page-2 {
-            width: 100%;
-            opacity: 0;
-            transform: translateX(100%);
-            animation: slideIn 0.5s ease-out forwards;
-            display: flex;
-            justify-content: center;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.2);
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        @keyframes fadeInUp {
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .info-updating {
-            animation: pulse 1s infinite;
-        }
-
-        .progress-indicator {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            padding-bottom: 20px;
-            width: 100%;
-        }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-        }
-
-        .step {
-            background-color: #2e3141;
-            color: #b0b0b0;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-size: 1rem;
-            text-align: center;
-            position: relative;
-        }
-
-        .step.active {
-            background-color: #00d8d2;
-            color: #ffffff;
-        }
-
-        .instructions {
-            font-size: 1rem;
-            color: #b0b0b0;
-            padding-top: 5px;
-        }
-
-        /* Tooltip styles */
-        [role="tooltip"] {
-            background-color: #393b50;
-            color: #ffffff;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            position: absolute;
-            z-index: 1000;
-            white-space: nowrap;
-        }
-
-        .tooltip {
-            position: absolute;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.6);
-            color: #ffffff;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            z-index: 10;
-        }
-
-        .tooltip::before {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 5px;
-            border-style: solid;
-            border-color: rgba(0, 0, 0, 0.6) transparent transparent transparent;
-        }
-
-        .custom-tooltip {
-            visibility: hidden;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            padding: 5px;
-            border-radius: 4px;
-            position: absolute;
-            z-index: 1;
-            bottom: 100%;
-            left: 50%;
-            margin-left: -60px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            white-space: nowrap;
-            font-size: 0.8rem;
-            width: 120px;
-        }
-
-        .custom-tooltip::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: #333 transparent transparent transparent;
-        }
-
-        .step.show-tooltip .custom-tooltip {
-            visibility: visible;
+    @keyframes fadeInUp {
+        100% {
             opacity: 1;
+            transform: translateY(0);
         }
+    }
 
+    .instructions {
+        font-size: 1rem;
+        color: #b0b0b0;
+        padding-top: 5px;
+    }
+</style>
+{% endblock %}
 
-        @keyframes shake {
+{% block progress_indicator %}
+{% with active_step=1 %}
+{{ block.super }}
+{% endwith%}
+{% endblock %}
 
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            10%,
-            30%,
-            50%,
-            70%,
-            90% {
-                transform: translateX(-7px);
-            }
-
-            20%,
-            40%,
-            60%,
-            80% {
-                transform: translateX(7px);
-            }
-        }
-
-        .shake {
-            animation: shake 0.6s cubic-bezier(.36, .07, .19, .97) both;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <div class="progress-indicator">
-            <div class="step active" data-tooltip="Register household members with their names.">
-                <span>1</span>
-                <p>Register Members</p>
-                <div class="custom-tooltip">Please complete the current step first.</div>
-            </div>
-            <div class="step" data-tooltip="Upload multiple images of each member for better recognition.">
-                <span>2</span>
-                <p>Upload Images</p>
-                <div class="custom-tooltip">Please complete the current step first.</div>
-            </div>
-            <div class="step" data-tooltip="Train the facial recognition model using the uploaded images.">
-                <span>3</span>
-                <p>Train Model</p>
-                <div class="custom-tooltip">Please complete the current step first.</div>
-            </div>
-            <div class="step" data-tooltip="Complete the setup process and start using Optical Presence.">
-                <span>4</span>
-                <p>Complete Setup</p>
-                <div class="custom-tooltip">Please complete the current step first.</div>
-            </div>
-        </div>
-        <div class="card">
-            <header>
-                <h1>Optical Presence</h1>
-                <p>Step 1: Register Household Members</p>
-                <p class="instructions">Enter the names of your household members below. You'll be able to upload photos
-                    and
-                    train the model in the next steps.</p>
-            </header>
-            <div class="form-container">
-                <input type="text" id="name-input" placeholder="Enter name" aria-describedby="name-input-tooltip">
-                <div id="name-input-tooltip" role="tooltip" hidden>
-                    Type the name of a household member and click 'Add Member' to create a card.
-                </div>
-                <button class="btn-add" onclick="addMember()" aria-describedby="add-member-tooltip">Add Member</button>
-                <div id="add-member-tooltip" role="tooltip" hidden>
-                    Click here to add the household member and create their card.
-                </div>
-            </div>
-            <main>
-                <template id="member-template">
-                    <div class="member">
-                        <div class="avatar"></div>
-                        <div class="name"></div>
-                        <div class="info">
-                            <span class="material-icons info-icon">location_on</span>
-                            <span class="location">Location: Unknown</span>
-                        </div>
-                        <div class="info">
-                            <span class="material-icons info-icon">access_time</span>
-                            <span class="last-seen">Last Seen: N/A</span>
-                        </div>
-                        <div class="info">
-                            <span class="material-icons info-icon">collections</span>
-                            <span class="pic-count">Pics Registered: 0</span>
-                        </div>
-                    </div>
-                </template>
-                {% csrf_token %}
-                <div class="member-container" id="member-container">
-                    <!-- Members will be added here -->
-                </div>
-                <div class="button-container">
-                    <a href="/upload" class="button">Proceed</a>
-                </div>
-            </main>
-        </div>
+{% block card %}
+<header>
+    <h1>Optical Presence</h1>
+    <p>Step 1: Register Household Members</p>
+    <p class="instructions">Enter the names of your household members below. You'll be able to upload photos
+        and
+        train the model in the next steps.</p>
+</header>
+<div class="form-container">
+    <input type="text" id="name-input" placeholder="Enter name" aria-describedby="name-input-tooltip">
+    <div id="name-input-tooltip" role="tooltip" hidden>
+        Type the name of a household member and click 'Add Member' to create a card.
     </div>
-    <script>
-        document.querySelectorAll('.step').forEach(step => {
-            step.addEventListener('mouseenter', () => {
-                const tooltipText = step.dataset.tooltip;
-                const tooltip = document.createElement('div');
-                tooltip.classList.add('tooltip');
-                tooltip.textContent = tooltipText;
-                step.appendChild(tooltip);
-                setTimeout(() => {
-                    tooltip.style.opacity = '1';
-                }, 50);
+    <button class="btn-add" onclick="addMember()" aria-describedby="add-member-tooltip">Add Member</button>
+    <div id="add-member-tooltip" role="tooltip" hidden>
+        Click here to add the household member and create their card.
+    </div>
+</div>
+<main>
+    <template id="member-template">
+        <div class="member">
+            <div class="avatar"></div>
+            <div class="name"></div>
+            <div class="info">
+                <span class="material-icons info-icon">location_on</span>
+                <span class="location">Location: Unknown</span>
+            </div>
+            <div class="info">
+                <span class="material-icons info-icon">access_time</span>
+                <span class="last-seen">Last Seen: N/A</span>
+            </div>
+            <div class="info">
+                <span class="material-icons info-icon">collections</span>
+                <span class="pic-count">Pics Registered: 0</span>
+            </div>
+        </div>
+    </template>
+    {% csrf_token %}
+    <div class="member-container" id="member-container">
+        <!-- Members will be added here -->
+    </div>
+    <div class="button-container">
+        <a href="/upload" class="button">Proceed</a>
+    </div>
+</main>
+{% endblock card %}
+
+{% block javascript %}
+{{ block.super }}
+<script>
+    function createMemberCard(name) {
+        const memberTemplate = document.getElementById('member-template');
+        const member = memberTemplate.content.cloneNode(true);
+
+        const nameElement = member.querySelector('.name');
+        nameElement.textContent = name;
+
+        return member;
+    }
+
+    function addAnimation(element) {
+        element.style.transform = 'translateY(20px)';
+        element.style.opacity = '0';
+        element.style.animation = 'fadeInUp 0.5s ease-out forwards';
+    }
+
+    async function addMember() {
+        const nameInput = document.getElementById('name-input');
+        const memberContainer = document.getElementById('member-container');
+        const name = nameInput.value.trim();
+        if (name !== '') {
+            const response = await fetch('/register_people/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: JSON.stringify({ name: name }),
             });
 
-            step.addEventListener('mouseleave', () => {
-                const tooltip = step.querySelector('.tooltip');
-                tooltip.style.opacity = '0';
-                setTimeout(() => {
-                    step.removeChild(tooltip);
-                }, 300);
-            });
-        });
-
-        function createMemberCard(name) {
-            const memberTemplate = document.getElementById('member-template');
-            const member = memberTemplate.content.cloneNode(true);
-
-            const nameElement = member.querySelector('.name');
-            nameElement.textContent = name;
-
-            return member;
+            const memberCard = createMemberCard(name);
+            addAnimation(memberCard.querySelector('.member'));
+            memberContainer.appendChild(memberCard);
+            nameInput.value = '';
         }
-
-        document.querySelectorAll('.step').forEach(step => {
-            step.addEventListener('click', () => {
-                if (!step.classList.contains('active')) {
-                    step.classList.add('shake');
-                    step.classList.add('show-tooltip');
-                    setTimeout(() => {
-                        step.classList.remove('shake');
-                    }, 820);
-                    setTimeout(() => {
-                        step.classList.remove('show-tooltip');
-                    }, 3000);
-                }
-            });
-        });
-
-        function addAnimation(element) {
-            element.style.transform = 'translateY(20px)';
-            element.style.opacity = '0';
-            element.style.animation = 'fadeInUp 0.5s ease-out forwards';
-        }
-
-        async function addMember() {
-            const nameInput = document.getElementById('name-input');
-            const memberContainer = document.getElementById('member-container');
-            const name = nameInput.value.trim();
-            if (name !== '') {
-                const response = await fetch('/register_people/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                    },
-                    body: JSON.stringify({ name: name }),
-                });
-
-                const memberCard = createMemberCard(name);
-                addAnimation(memberCard.querySelector('.member'));
-                memberContainer.appendChild(memberCard);
-                nameInput.value = '';
-            }
-        }
-    </script>
-</body>
-
-</html>
+    }
+</script>
+{% endblock %}

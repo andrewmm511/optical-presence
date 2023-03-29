@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Optical Presence{% endblock %}</title>
+    {% load static %}
+    {% block css %}
+    <link rel="stylesheet" href="{% static 'common/css/base.css' %}">
+    {% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
+    {% block javascript %}{% endblock %}
+</body>
+</html>

@@ -1,99 +1,359 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Optical Presence - Upload Photos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500&display=swap" rel="stylesheet">
-    <style>
-        /* Common CSS styles */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #1c1e29;
-            font-family: 'Roboto', sans-serif;
-            color: #ffffff;
+{% extends "common/setup_flow/setup.html" %}
+{% load custom_tags %}
+
+{% block css %}
+{{ block.super }}
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 800px;
+    }
+
+    /* Specific CSS styles for the photo upload page */
+    .photo-upload-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        width: 100%;
+        max-width: 800px;
+        padding: 20px;
+        background-color: #2e3141;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .members-preview {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        align-items: center;
+        padding: 10px;
+        background-color: #393b50;
+        border-radius: 8px;
+        width: 100%;
+        margin-bottom: 30px;
+    }
+
+    .explanation {
+        font-size: 1rem;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .input-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .custom-file-upload {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #00d8d2;
+        display: inline-block;
+        padding: 6px 12px;
+        cursor: pointer;
+        background-color: #393b50;
+        color: #ffffff;
+        border-radius: 4px;
+        font-size: 1rem;
+        text-align: center;
+        transition: background-color 0.3s ease;
+    }
+
+    .custom-file-upload:hover {
+        background-color: #00d8d2;
+        color: #1c1e29;
+    }
+
+    .file-upload {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .file-upload input[type="file"] {
+        font-family: 'Roboto', sans-serif;
+        color: #ffffff;
+        background-color: #00d8d2;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 16px;
+        width: 100%;
+        opacity: 0;
+        position: absolute;
+        z-index: -1;
+    }
+
+    .upload-btn {
+        font-family: 'Roboto', sans-serif;
+        color: #ffffff;
+        background-color: #00d8d2;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 16px;
+        width: 100%;
+        transition: background-color 0.3s ease;
+    }
+
+    .upload-btn:hover {
+        background-color: #27bdb2;
+    }
+
+    .loader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+    }
+
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 6px solid #ffffff;
+        border-top-color: #00d8d2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    .face-loader * {
+        opacity: 0.2;
+    }
+
+    .face-loader {
+        position: absolute;
+    }
+
+    .face-outline,
+    .face-centerline,
+    .left-eye,
+    .right-eye,
+    .mouth,
+    .horizontal-top,
+    .horizontal-bottom,
+    .horizontal-middle,
+    .top-left,
+    .top-right,
+    .mid-left,
+    .mid-right,
+    .bottom {
+        animation: flash .8s infinite;
+    }
+
+    .processing-text {
+        color: #00d8d2;
+        font-size: 16px;
+        margin-top: 100px;
+        text-align: center;
+        position: relative;
+    }
+
+    /* Define separate animations for each element with different delays */
+
+    @keyframes flash {
+        50% {
+            opacity: 1;
         }
-    
-        h2 {
-            font-weight: 300;
-            font-size: 2rem;
-            margin-bottom: 20px;
+    }
+
+    .face-outline {
+        animation-delay: 0.1s;
+    }
+
+    .face-centerline {
+        animation-delay: 0.3s;
+    }
+
+    .left-eye {
+        animation-delay: 0.5s;
+    }
+
+    .right-eye {
+        animation-delay: 0.7s;
+    }
+
+    .mouth {
+        animation-delay: 0.9s;
+    }
+
+    .horizontal-top {
+        animation-delay: 1.1s;
+    }
+
+    .horizontal-bottom {
+        animation-delay: 1.3s;
+    }
+
+    .horizontal-middle {
+        animation-delay: 1.5s;
+    }
+
+    .top-left {
+        animation-delay: 0.2s;
+    }
+
+    .top-right {
+        animation-delay: 0.4s;
+    }
+
+    .mid-left {
+        animation-delay: 0.6s;
+    }
+
+    .mid-right {
+        animation-delay: 0.8s;
+    }
+
+    .bottom {
+        animation-delay: 1.0s;
+    }
+
+    .instructions {
+        font-size: 1rem;
+        color: #b0b0b0;
+        padding-top: 5px;
+    }
+
+    .warning-box {
+        background-color: #ff9800;
+        color: #ffffff;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .faces-requirement {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    @keyframes spin {
+        100% {
+            transform: rotate(360deg);
         }
-    
-        /* Specific CSS styles for the photo upload page */
-        .photo-upload-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-        }
-    
-        .members-preview {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            align-items: center;
-            padding: 10px;
-            background-color: #2e3141;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 30px;
-        }
-    
-        .file-upload {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-    
-        .file-upload input[type="file"] {
-            font-family: 'Roboto', sans-serif;
-            color: #ffffff;
-            background-color: #00d8d2;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 16px;
-        }
-    
-        .upload-btn {
-            font-family: 'Roboto', sans-serif;
-            color: #ffffff;
-            background-color: #00d8d2;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s;
-        }
-    
-        .upload-btn:hover {
-            background-color: #00c0b9;
-        }
-    </style>
-</head>
-<body>
-    <div class="photo-upload-container">
-        <h2>Upload Photos</h2>
-        <div class="members-preview">
-            <!-- Render small member cards (similar to the ones on the previous page) here -->
-        </div>
-        <div class="file-upload">
-            <input type="file" multiple>
-            <button class="upload-btn">Upload Photos</button>
-        </div>
+    }
+</style>
+{% endblock %}
+
+{% block progress_indicator %}
+{% with active_step=2 %}
+{{ block.super }}
+{% endwith%}
+{% endblock %}
+
+{% block card %}
+<header>
+    <h1>Optical Presence</h1>
+    <p>Step 2: Upload Images</p>
+    <p class="instructions">upload a set of photos containing the faces of your household members. The app
+        will extract the
+        faces for further classification.</p>
+</header>
+<div class="members-preview">
+    <!-- Members preview will be added here -->
+</div>
+<div class="input-container">
+    <div class="warning-box">
+        <p class="faces-requirement">
+            Note: Please make sure to upload enough photos to have at least 100 faces of each person.
+        </p>
     </div>
-</body>
-</html>
+    <p class="file-count"></p>
+    <div class="file-upload">
+        <label for="file-input" class="custom-file-upload">
+            <i class="fas fa-cloud-upload-alt"></i> Select Photos
+        </label>
+        <input id="file-input" type="file" multiple accept="image/*" onchange="prepareSubmit()" />
+        <button class="upload-btn" onclick="submitPhotos()" disabled>Submit</button>
+    </div>
+</div>
+{% endblock card %}
+
+<div id="loader" class="loader" style="display: none;">
+    <svg class="face-loader" viewBox="0 0 100 100" width="60" height="60">
+        <!-- Add a unique class to each element for individual animations -->
+        <polygon class="face-outline" points="50,1 95,25 81,87 19,87 5,25" fill="none" stroke="#00d8d2"
+            stroke-width="2"></polygon>
+        <line class="face-centerline" x1="50" y1="1" x2="50" y2="87" stroke="#00d8d2" stroke-width="2"></line>
+        <circle class="left-eye" cx="30" cy="43" r="2" fill="#00d8d2"></circle>
+        <circle class="right-eye" cx="70" cy="43" r="2" fill="#00d8d2"></circle>
+        <path class="mouth" d="M25,60 Q50,75,75,60" fill="none" stroke="#00d8d2" stroke-width="2"></path>
+
+        <!-- Additional lines and nodes for a neural net feel -->
+        <line class="horizontal-top" x1="5" y1="25" x2="95" y2="25" stroke="#00d8d2" stroke-width="1"></line>
+        <line class="horizontal-bottom" x1="19" y1="87" x2="81" y2="87" stroke="#00d8d2" stroke-width="1"></line>
+        <line class="horizontal-middle" x1="30" y1="43" x2="70" y2="43" stroke="#00d8d2" stroke-width="1"></line>
+
+        <circle class="top-left" cx="25" cy="25" r="1.5" fill="#00d8d2"></circle>
+        <circle class="top-right" cx="75" cy="25" r="1.5" fill="#00d8d2"></circle>
+        <circle class="mid-left" cx="40" cy="43" r="1.5" fill="#00d8d2"></circle>
+        <circle class="mid-right" cx="60" cy="43" r="1.5" fill="#00d8d2"></circle>
+        <circle class="bottom" cx="50" cy="87" r="1.5" fill="#00d8d2"></circle>
+    </svg>
+    <p class="processing-text">Uploading data...</p>
+</div>
+
+{% block javascript %}
+{{ block.super }}
+<script>
+    function prepareSubmit() {
+        const input = document.getElementById('file-input');
+        const fileCount = input.files.length;
+        const fileCountText = document.querySelector('.file-count');
+        const submitButton = document.querySelector('.upload-btn');
+
+        if (fileCount > 0) {
+            fileCountText.textContent = `${fileCount} file(s) selected`;
+            submitButton.disabled = false;
+        } else {
+            fileCountText.textContent = '';
+            submitButton.disabled = true;
+        }
+
+    }
+
+    function submitPhotos() {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'flex';
+
+        // Make a POST request to Django
+        // After the response, hide the loader
+        // loader.style.display = 'none';
+        setTimeout(() => {
+            document.querySelector('.processing-text').textContent = 'Analyzing faces...';
+        }, 3000);
+
+        setTimeout(() => {
+            document.querySelector('.processing-text').textContent = 'Finalizing results...';
+        }, 6000);
+    }
+
+
+</script>
+{% endblock %}
+

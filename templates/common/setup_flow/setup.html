@@ -1,0 +1,22 @@
+{% extends "common/base.html" %}
+{% load custom_tags %}
+{% load static %}
+
+{% block css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'common/css/setup.css' %}">
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% block progress_indicator %}
+{% progress_indicator active_step=active_step %}
+{% endblock %}
+<div class="card">
+    {% block card %}
+    {% endblock %}
+</div>
+{% endblock %}
+{% block javascript %}
+{{ block.super }}
+{% endblock %}
