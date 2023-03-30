@@ -60,39 +60,15 @@
         background-color: #003874;
     }
 
-    #page-1 {
-        position: absolute;
-        left: 0;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-    }
-
-    .slide-out {
-        animation: slideOut 0.5s ease-in-out forwards;
-    }
-
-    @keyframes slideOut {
-        0% {
-            transform: translateX(0);
-        }
-
-        100% {
-            transform: translateX(-100%);
-        }
-    }
 </style>
 {% endblock %}
 
 {% block progress_indicator %}
 {% endblock %}
-
+{% block card_title %}Optical Presence{% endblock %}
+{% block card_subtitle %}Set up your smart home presence tracker!{% endblock %}
 {% block card %}
 <!-- <div id="page-1"> -->
-<header>
-    <h1>Optical Presence</h1>
-    <p>Set up your smart home presence tracker!</p>
-</header>
 <main>
     <ol>
         <li>
@@ -121,18 +97,10 @@
         <a href="/dashboard" class="button skip">Skip to Dashboard</a>
     </div>
 </main>
-{% endblock %}
+{% endblock card %}
+{% block next_page_url %}/register_people{% endblock %}
+
 
 {% block javascript %}
 {{ block.super }}
-<script>
-    function goToNextPage() {
-        const page1 = document.getElementById('page-1');
-        page1.classList.add('slide-out');
-
-        setTimeout(() => {
-            window.location.href = '/register_people';
-        }, 500);
-    }
-</script>
 {% endblock %}

@@ -1,0 +1,122 @@
+{% extends "common/setup_flow/setup.html" %}
+
+{% block css %}
+{{ block.super }}
+<style>
+  form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #c5c5c5;
+  }
+
+  input[type="text"],
+  input[type="password"],
+  input[type="email"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #c5c5c5;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+    transition: background-color 0.3s, border-color 0.3s;
+    font-size: 1rem;
+  }
+
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  input[type="email"]:focus {
+    background-color: #ffffff;
+    border-color: #00d8d2;
+    outline: none;
+  }
+
+  .submit-btn {
+    background-color: #00d8d2;
+    color: #ffffff;
+    border: none;
+    font-size: 1rem;
+    padding: 12px 24px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    margin-top: 1rem;
+  }
+
+  .submit-btn:hover {
+    background-color: #00b6ad;
+  }
+
+  .warning-border {
+    border: 1px solid #ff9800 !important;
+    box-shadow: 0 0 0 1px #ff9800;
+  }
+</style>
+{% endblock %}
+
+{% block progress_indicator %}
+{% endblock %}
+{% block card_title %}Optical Presence{% endblock %}
+{% block card_subtitle %}Create a new account{% endblock %}
+{% block card %}
+<form method="post">
+  {% csrf_token %}
+  <div class="form-group">
+    {{ form.username.label_tag }} {{ form.username }}
+  </div>
+  <div class="form-group">
+    {{ form.password1.label_tag }} {{ form.password1 }}
+  </div>
+  <div class="form-group">
+    {{ form.password2.label_tag }} {{ form.password2 }}
+  </div>
+  <div class="form-group">
+    <button type="submit" class="submit-btn">Sign Up</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const password1 = document.querySelector("#id_password1");
+    const password2 = document.querySelector("#id_password2");
+    const passwordValidationMessage = document.createElement("div");
+    passwordValidationMessage.style.display = "none";
+    passwordValidationMessage.style.color = "red";
+    password2.parentNode.insertBefore(
+      passwordValidationMessage,
+      password2.nextSibling
+    );
+
+    function validatePasswords() {
+      if (password1.value !== password2.value) {
+        passwordValidationMessage.textContent = "Passwords do not match.";
+        passwordValidationMessage.style.display = "block";
+        password1.classList.add("warning-border");
+        password2.classList.add("warning-border");
+      } else {
+        passwordValidationMessage.style.display = "none";
+        password1.classList.remove("warning-border");
+        password2.classList.remove("warning-border");
+      }
+    }
+
+    password1.addEventListener("input", validatePasswords);
+    password2.addEventListener("input", validatePasswords);
+  });
+
+</script>
+{% endblock %}

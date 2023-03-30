@@ -4,6 +4,8 @@
 {% block css %}
 {{ block.super }}
 <style>
+    @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
     .form-container {
         display: flex;
         flex-direction: column;
@@ -120,10 +122,35 @@
         color: #00d8d2;
     }
 
+    .delete-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: none;
+        border: none;
+        font-size: 1rem;
+        color: rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+    }
+
+    .delete-btn:hover {
+        color: rgba(0, 0, 0, 0.6);
+    }
+
     @keyframes fadeInUp {
         100% {
             opacity: 1;
             transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
         }
     }
 
@@ -136,19 +163,18 @@
 {% endblock %}
 
 {% block progress_indicator %}
-{% with active_step=1 %}
+{% with active_step=1 clickable_steps=clickable_step_numbers %}
 {{ block.super }}
 {% endwith%}
 {% endblock %}
 
+{% block card_title %}Optical Presence{% endblock %}
+{% block card_subtitle %}Step 1: Register Household Members{% endblock %}
+
 {% block card %}
-<header>
-    <h1>Optical Presence</h1>
-    <p>Step 1: Register Household Members</p>
-    <p class="instructions">Enter the names of your household members below. You'll be able to upload photos
-        and
-        train the model in the next steps.</p>
-</header>
+<p class="instructions">Enter the names of your household members below. You'll be able to upload photos
+    and
+    train the model in the next steps.</p>
 <div class="form-container">
     <input type="text" id="name-input" placeholder="Enter name" aria-describedby="name-input-tooltip">
     <div id="name-input-tooltip" role="tooltip" hidden>
@@ -162,6 +188,7 @@
 <main>
     <template id="member-template">
         <div class="member">
+            <button class="delete-btn">X</button>
             <div class="avatar"></div>
             <div class="name"></div>
             <div class="info">
@@ -183,23 +210,30 @@
         <!-- Members will be added here -->
     </div>
     <div class="button-container">
-        <a href="/upload" class="button">Proceed</a>
+        <a href="javascript:void(0)" class="button" onclick="goToNextPage()">Proceed</a>
     </div>
 </main>
 {% endblock card %}
+{% block next_page_url %}/upload{% endblock %}
 
 {% block javascript %}
 {{ block.super }}
 <script>
-    function createMemberCard(name) {
-        const memberTemplate = document.getElementById('member-template');
+    function createMemberCard(name, id) {
+        const memberTemplate = document.getElementById("member-template");
         const member = memberTemplate.content.cloneNode(true);
 
-        const nameElement = member.querySelector('.name');
+        const memberElement = member.querySelector(".member");
+        const nameElement = member.querySelector(".name");
         nameElement.textContent = name;
+
+        const deleteBtn = member.querySelector(".delete-btn");
+        deleteBtn.addEventListener("click", () => deleteMember(id, memberElement));
 
         return member;
     }
+
+
 
     function addAnimation(element) {
         element.style.transform = 'translateY(20px)';
@@ -208,24 +242,63 @@
     }
 
     async function addMember() {
-        const nameInput = document.getElementById('name-input');
-        const memberContainer = document.getElementById('member-container');
+        const nameInput = document.getElementById("name-input");
+        const memberContainer = document.getElementById("member-container");
         const name = nameInput.value.trim();
-        if (name !== '') {
-            const response = await fetch('/register_people/', {
-                method: 'POST',
+        if (name !== "") {
+            const response = await fetch("/register_people/", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
                 },
                 body: JSON.stringify({ name: name }),
             });
 
-            const memberCard = createMemberCard(name);
-            addAnimation(memberCard.querySelector('.member'));
-            memberContainer.appendChild(memberCard);
-            nameInput.value = '';
+            const data = await response.json();
+            if (data.status === "success") {
+                const memberCard = createMemberCard(name, data.person_id);
+                addAnimation(memberCard.querySelector(".member"));
+                memberContainer.appendChild(memberCard);
+                nameInput.value = "";
+            } else {
+                console.error("Failed to create a new person.");
+            }
         }
     }
+
+    async function deleteMember(id, memberElement) {
+        const response = await fetch(`/register_people/delete/${id}/`, {
+            method: "DELETE",
+            headers: {
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+            },
+        });
+
+        if (response.ok) {
+            memberElement.style.animation = "fadeOut 0.5s ease-out forwards";
+            memberElement.addEventListener("animationend", () => {
+                memberElement.remove();
+            });
+        } else {
+            console.error("Failed to delete the person.");
+        }
+    }
+
+    function populateExistingPersons(existingPersons) {
+        const memberContainer = document.getElementById('member-container');
+
+        existingPersons.forEach(person => {
+            const memberCard = createMemberCard(person.fields.name, person.pk);
+            addAnimation(memberCard.querySelector('.member'));
+            memberContainer.appendChild(memberCard);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const existingPersons = {{ existing_persons| safe }};
+    populateExistingPersons(existingPersons);
+    });
+
 </script>
 {% endblock %}

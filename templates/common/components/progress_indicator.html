@@ -30,23 +30,12 @@
         color: #ffffff;
     }
 
-    [role="tooltip"] {
-        background-color: #393b50;
-        color: #ffffff;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        position: absolute;
-        z-index: 1000;
-        white-space: nowrap;
-    }
-
     .tooltip {
         position: absolute;
         bottom: 125%;
         left: 50%;
         transform: translateX(-50%);
-        background-color: rgba(0, 0, 0, 0.6);
+        background-color: rgba(0, 0, 0, 0.8);
         color: #ffffff;
         padding: 5px 10px;
         border-radius: 4px;
@@ -56,6 +45,12 @@
         pointer-events: none;
         transition: opacity 0.3s;
         z-index: 10;
+        display: none;
+    }
+
+    .tooltip.show {
+        display: block;
+        opacity: 1;
     }
 
     .tooltip::before {
@@ -66,7 +61,7 @@
         transform: translateX(-50%);
         border-width: 5px;
         border-style: solid;
-        border-color: rgba(0, 0, 0, 0.6) transparent transparent transparent;
+        border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
     }
 
     .custom-tooltip {
@@ -116,68 +111,103 @@
         50%,
         70%,
         90% {
-            transform: translateX(-7px);
+            transform: translateX(-4px);
         }
 
         20%,
         40%,
         60%,
         80% {
-            transform: translateX(7px);
+            transform: translateX(4px);
         }
     }
 
     .shake {
         animation: shake 0.6s cubic-bezier(.36, .07, .19, .97) both;
     }
+
+    .orange-fade {
+        animation: orangeFade 0.5s ease-in-out both;
+    }
+
+    @keyframes orangeFade {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 159, 99, 0);
+        }
+
+        50% {
+            box-shadow: 0 0 0 2px rgba(255, 159, 99, 1);
+        }
+    }
 </style>
 
 <div class="container">
     <div class="progress-indicator">
         {% for step in steps %}
-        <div class="step {% if forloop.counter == active_step %}active{% endif %}" data-tooltip="{{ step.tooltip }}">
-            <span>{{ forloop.counter }}</span>
-            <p>{{ step.title }}</p>
-            <div class="custom-tooltip">{{ step.tooltip_message }}</div>
+        <div class="step {% if forloop.counter == active_step %}active{% endif %}{% if step.clickable %} clickable{% endif %}" data-tooltip="{{ step.tooltip }}" {% if step.clickable %}data-url="{{ step.url }}"{% endif %}>
+            <div class="step-content">
+                <span>{{ forloop.counter }}</span>
+                <p>{{ step.title }}</p>
+                <div class="custom-tooltip">{{ step.tooltip_message }}</div>
+            </div>
         </div>
         {% endfor %}
     </div>
 </div>
 
 <script>
-    document.querySelectorAll('.step').forEach(step => {
-        step.addEventListener('mouseenter', () => {
-            const tooltipText = step.dataset.tooltip;
-            const tooltip = document.createElement('div');
-            tooltip.classList.add('tooltip');
-            tooltip.textContent = tooltipText;
-            step.appendChild(tooltip);
-            setTimeout(() => {
-                tooltip.style.opacity = '1';
-            }, 50);
-        });
+    const container = document.querySelector('.container');
 
-        step.addEventListener('mouseleave', () => {
-            const tooltip = step.querySelector('.tooltip');
-            tooltip.style.opacity = '0';
-            setTimeout(() => {
-                step.removeChild(tooltip);
-            }, 300);
-        });
+    container.addEventListener('mouseover', (e) => {
+        if (e.target.closest('.step')) {
+            const step = e.target.closest('.step');
+            const tooltipText = step.dataset.tooltip;
+            let tooltip = step.querySelector('.tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.classList.add('tooltip');
+                tooltip.textContent = tooltipText;
+                step.appendChild(tooltip);
+            }
+            tooltip.classList.add('show');
+        }
     });
 
-    document.querySelectorAll('.step').forEach(step => {
-        step.addEventListener('click', () => {
-            if (!step.classList.contains('active')) {
-                step.classList.add('shake');
-                step.classList.add('show-tooltip');
+    container.addEventListener('mouseout', (e) => {
+        if (e.target.closest('.step')) {
+            const step = e.target.closest('.step');
+            const tooltip = step.querySelector('.tooltip');
+            if (tooltip) {
+                tooltip.classList.remove('show');
                 setTimeout(() => {
-                    step.classList.remove('shake');
+                    if (!tooltip.classList.contains('show')) {
+                        step.removeChild(tooltip);
+                    }
+                }, 300);
+            }
+        }
+    });
+
+    container.addEventListener('click', (e) => {
+        if (!e.target.closest('.step.active')) {
+            const step = e.target.closest('.step');
+            const stepContent = step.querySelector('.step-content');
+            const stepURL = step.dataset.url;
+
+            if (stepURL && e.target.closest('.step.clickable')) {
+                window.location.href = stepURL;
+            } else {
+                stepContent.classList.add('shake');
+                step.classList.add('orange-fade');
+                setTimeout(() => {
+                    stepContent.classList.remove('shake');
                 }, 820);
                 setTimeout(() => {
-                    step.classList.remove('show-tooltip');
-                }, 3000);
+                    step.classList.remove('orange-fade');
+                }, 1000);
             }
-        });
+        }
     });
 </script>

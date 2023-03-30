@@ -10,13 +10,31 @@
 {% block content %}
 {{ block.super }}
 {% block progress_indicator %}
-{% progress_indicator active_step=active_step %}
+{% progress_indicator active_step=active_step clickable_steps=clickable_steps %}
 {% endblock %}
-<div class="card">
-    {% block card %}
-    {% endblock %}
+<div id="page">
+    <div class="card">
+        <header>
+            <h1>{% block card_title %}{% endblock %}</h1>
+            <p>{% block card_subtitle %}{% endblock %}</p>
+        </header>
+        {% block card %}
+        {% endblock %}
+    </div>
 </div>
 {% endblock %}
+
 {% block javascript %}
 {{ block.super }}
+<script>
+    function goToNextPage() {
+        const nextPageUrl = '{% block next_page_url %}{% endblock %}';
+        const page1 = document.getElementById('page');
+        page1.classList.add('slide-out');
+
+        setTimeout(() => {
+            window.location.href = nextPageUrl;
+        }, 500);
+    }
+</script>
 {% endblock %}
