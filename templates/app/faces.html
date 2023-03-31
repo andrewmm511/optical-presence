@@ -8,6 +8,7 @@
     <meta charset="utf-8">
     <title>Face Recognition</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         body {
             display: flex;
@@ -18,10 +19,11 @@
         }
 
         .card {
-            width: 400px;
+            width: 800px;
             border: none;
             background-color: #2e3141;
             color: #ffffff;
+            padding: 20px;
         }
 
         .progress {
@@ -110,6 +112,64 @@
             font-size: 0.8rem;
         }
 
+        .member-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            margin-top: 20px;
+            padding-bottom: 10px;
+        }
+
+        .member {
+            background-color: #393b50;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 1rem;
+            margin: 5px;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease-out forwards;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="%23FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Ccircle cx="12" cy="12" r="11" /%3E%3Cpath d="M12 12c3.333 0 6 2.374 6 5.303v1.697H6v-1.697C6 14.374 8.667 12 12 12zm0-4a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" /%3E%3C/svg%3E');
+            background-size: cover;
+            border-radius: 50%;
+            margin-bottom: 10px;
+            border: 3px solid #00d8d2;
+        }
+
+        .name {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .info {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #b0b0b0;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 4px;
+            gap: 4px;
+        }
+
+        .info-icon {
+            font-size: 1.1rem;
+            color: #00d8d2;
+        }
+
         @keyframes crumple {
             0% {
                 transform: rotate(0deg) scale(1) translateY(0);
@@ -137,24 +197,24 @@
     <div class="card">
         <div class="card-header">
             <div class="progress">
-                {% with progress=1|sub:extracted_faces_paths|length|div:total_faces %}
+                {% with progress=1|sub:face_pictures|length|div:total_faces %}
                 <div class="progress-bar" role="progressbar" style="width: {{ progress|mul:100 }}%;"
                     aria-valuenow="{{ progress|mul:100 }}" aria-valuemin="0" aria-valuemax="100"
                     data-total-faces="{{ total_faces }}"></div>
                 {% endwith %}
             </div>
             <div class="card-body image-container">
-                <img src="/{{ current_image }}" alt="Extracted face">
+                <img src="{{ current_face_picture.image.url }}" alt="Current extracted face"
+                    data-face-picture-id="{{ current_face_picture.id }}">
             </div>
             <div class="card-footer">
-                <form id="face-form" action="/faces" method="POST">
+                <form id="face-form" action="/faces/" method="POST">
                     {% csrf_token %}
-                    <input type="hidden" name="current_image" value="{{ current_image }}">
-                    <input type="hidden" name="selected_name" id="selected-name" value="">
+                    <input type="hidden" name="current_face_picture_id" value="{{ current_face_picture.id }}">
                     <div class="btn-group">
-                        {% for name in name_list %}
-                        <button type="submit" name="name_button" value="{{ name }}" class="btn btn-primary">{{ name
-                            }}</button>
+                        {% for person in name_list %}
+                        <button type="submit" name="name_button" value="{{ person.name }}" id="{{ person.id }}"
+                            class="btn btn-primary">{{ person.name }}</button>
                         {% endfor %}
                         <button type="submit" name="name_button" value="neither"
                             class="btn btn-secondary">Neither</button>
@@ -162,8 +222,28 @@
                 </form>
             </div>
         </div>
-        <div class="sub-cards-container">
+        <template id="member-template">
+            <div class="member">
+                <div class="avatar"></div>
+                <div class="name"></div>
+                <div class="info">
+                    <span class="material-icons info-icon">location_on</span>
+                    <span class="location">Location: Unknown</span>
+                </div>
+                <div class="info">
+                    <span class="material-icons info-icon">access_time</span>
+                    <span class="last-seen">Last Seen: N/A</span>
+                </div>
+                <div class="info">
+                    <span class="material-icons info-icon">collections</span>
+                    <span class="pic-count">Pics Registered: 0</span>
+                </div>
+            </div>
+        </template>
+        <div class="member-container" id="member-container">
+            <!-- Members will be added here -->
         </div>
+
 
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script>
@@ -171,7 +251,7 @@
                 let clickedButtonValue;
                 const csrftoken2 = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-                async function submitForm(selectedName, currentImage) {
+                async function submitForm(selectedPersonId, facePictureId) {
                     const response = await fetch("/faces/", {
                         method: "POST",
                         headers: {
@@ -179,8 +259,8 @@
                             "X-CSRFToken": csrftoken2,
                         },
                         body: JSON.stringify({
-                            selected_name: selectedName,
-                            current_image: currentImage,
+                            "selected_person_id": selectedPersonId,
+                            "current_face_picture_id": facePictureId
                         }),
                     });
                     console.log("Response status:", response.status);
@@ -197,18 +277,22 @@
                     });
                 }
 
-                function updateSubCard(selectedName) {
-                    const subCard = $(`.sub-card[data-name='${selectedName}']`);
+                function updateSubCard(selectedName, selectedPersonId) {
+                    const subCard = $(`.member[data-person-id='${selectedPersonId}']`);
                     let targetPosition;
 
                     if (subCard.length === 0) {
                         // Create a new sub-card if it doesn't exist
-                        $(".sub-cards-container").append(`<div class="sub-card" data-name="${selectedName}"><span>1</span></div>`);
-                        targetPosition = $(`.sub-card[data-name='${selectedName}']`).offset();
+                        const newSubCard = $($("#member-template").html());
+                        newSubCard.attr("data-person-id", selectedPersonId);
+                        newSubCard.find(".name").text(selectedName);
+                        newSubCard.find(".pic-count").text("Pics Registered: 1");
+                        $("#member-container").append(newSubCard);
+                        targetPosition = newSubCard.offset();
                     } else {
                         targetPosition = subCard.offset();
-                        const count = parseInt(subCard.find("span").text()) + 1;
-                        subCard.find("span").text(count);
+                        const count = parseInt(subCard.find(".pic-count").text().replace("Pics Registered: ", "")) + 1;
+                        subCard.find(".pic-count").text(`Pics Registered: ${count}`);
                     }
 
                     return targetPosition;
@@ -218,19 +302,20 @@
                     if (data.status === "success") {
                         location.reload();  // Reload the page if all faces have been processed
                     } else {
-                        $(".image-container img").attr("src", data.next_image_url);  // Update the main image with the next face
-                        $("#face-form input[name='current_image']").val(data.next_image_url);
+                        $(".image-container img")
+                            .attr("src", data.next_image_url)  // Update the main image with the next face
+                            .attr("data-face-picture-id", data.next_face_picture_id);  // Update the image's face_picture_id
+                        $("#face-form input[name='current_face_picture_id']").val(data.next_face_picture_id);
 
                         // Calculate the new progress percentage
                         const totalFaces = parseInt($(".progress-bar").data("total-faces"), 10);  // Get the total number of faces from the context
-                        const remainingImages = data.extracted_faces_paths.length;
-                        const progress = 1 - (remainingImages / totalFaces);
+                        const processedFaces = data.processed_faces_count;
+                        const progress = (processedFaces / totalFaces);
 
                         // Update the progress bar
                         $(".progress-bar")
                             .css("width", (progress * 100) + "%")
                             .attr("aria-valuenow", progress * 100);
-
                     }
                 }
 
@@ -238,17 +323,16 @@
                     e.preventDefault();
 
                     clickedButtonValue = $(document.activeElement).val(); // Get the clicked button's value
-                    const selectedName = clickedButtonValue;
-                    const currentImage = $("input[name='current_image']").val();
+                    const selectedPersonId = $(document.activeElement).attr('id');
+                    const facePictureId = $("input[name='current_face_picture_id']").val();
                     const img = $(".image-container img");
-                    const form = $(this); // Store the reference to the form
 
-                    if (selectedName === "neither") {
+                    if (clickedButtonValue === "neither") {
                         img.addClass("crumpled");
                         setTimeout(async () => {
                             img.removeClass("crumpled");
 
-                            const response = await submitForm(selectedName, currentImage);
+                            const response = await submitForm(selectedPersonId, facePictureId);
                             processResponse(response);
                         }, 300);
                         return;
@@ -256,7 +340,7 @@
 
                     const imgClone = img.clone().attr('src', img.attr('src'));
                     const imgOffset = img.offset();
-                    const targetPosition = updateSubCard(selectedName);
+                    const targetPosition = updateSubCard(clickedButtonValue, selectedPersonId);
 
                     imgClone.css({
                         position: "absolute",
@@ -275,7 +359,7 @@
 
                     imgClone.promise().done(async function () {
                         imgClone.remove();
-                        const response = await submitForm(selectedName, currentImage);
+                        const response = await submitForm(selectedPersonId, facePictureId);
                         img.css("visibility", "visible");
                         processResponse(response);
                     });

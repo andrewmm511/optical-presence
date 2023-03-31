@@ -11,10 +11,19 @@ from django.shortcuts import redirect, render
 from training import face_extraction
 from utils import get_next_image_url, process_selected_name
 
-from .models import Person
+from .models import Person, FacePicture
 
 
-def signup(request):
+def signup(request: HttpRequest) -> HttpResponse:
+    """
+    Sign up a new user.
+
+    Args:
+        request: HttpRequest object containing user details.
+
+    Returns:
+        HttpResponse object after creating a new user.
+    """
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -25,32 +34,27 @@ def signup(request):
         form = UserCreationForm()
     return render(request, 'registration/signup.html', {'form': form})
 
-def test(request: HttpRequest) -> HttpResponse:
-    if request.method == "POST":
-        # User has submitted the form, now process the data
-        full_images = request.FILES.getlist("folder")
-        user = request.user
 
-        if full_images:
-            extracted_faces_paths = face_extraction.save_faces_from_images(full_images, user)
-            request.session["extracted_faces_paths"] = extracted_faces_paths
-            request.session["total_faces"] = len(extracted_faces_paths)
-            request.session["name_list"] = request.POST.getlist('names')
-
-            return redirect('faces')
-        else:
-            return render(request, "app/test.html")
-    else:
-        return render(request, "app/test.html")
-    
 @login_required
 def register_people(request: HttpRequest) -> HttpResponse:
+    """
+    Register a new person.
+
+    Args:
+        request: HttpRequest object containing person details.
+
+    Returns:
+        HttpResponse object after registering a new person.
+    """
     if request.method == "POST":
         data = json.loads(request.body)
         name = data.get('name')
-        person = Person(name=name, user=request.user)
-        person.save()
-        return JsonResponse({"status": "success", "person_id": person.id})
+        if name:
+            person = Person(name=name, user=request.user)
+            person.save()
+            return JsonResponse({"status": "success", "person_id": person.id})
+        else:
+            return JsonResponse({"status": "error", "message": "Missing name"}, status=400)
     else:
         existing_persons = Person.objects.filter(user=request.user)
         existing_persons_json = serializers.serialize('json', existing_persons)
@@ -59,8 +63,16 @@ def register_people(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def upload(request: HttpRequest) -> HttpResponse:
+    """
+    Upload images for face recognition.
+
+    Args:
+        request: HttpRequest object containing the uploaded images.
+
+    Returns:
+        HttpResponse object after uploading the images.
+    """
     if request.method == "POST":
-        # User has submitted the form, now process the data
         full_images = request.FILES.getlist("folder")
         user = request.user
 
@@ -77,8 +89,19 @@ def upload(request: HttpRequest) -> HttpResponse:
         clickable_step_numbers = [1]
         return render(request, "app/upload.html", {'clickable_step_numbers': clickable_step_numbers})
 
+
 @login_required
 def delete_person(request: HttpRequest, person_id: int) -> JsonResponse:
+    """
+    Delete a person.
+
+    Args:
+        request: HttpRequest object.
+        person_id: Integer ID of the person to be deleted.
+
+    Returns:
+        JsonResponse object after deleting the person.
+    """
     if request.method == "DELETE":
         try:
             person = Person.objects.get(pk=person_id, user=request.user)
@@ -89,37 +112,56 @@ def delete_person(request: HttpRequest, person_id: int) -> JsonResponse:
     else:
         return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
 
+
 @login_required
 def index(request: HttpRequest) -> HttpResponse:
+    """
+    Render the index page.
+
+    Args:
+        request: HttpRequest object.
+
+    Returns:
+        HttpResponse object for rendering the index page.
+    """
     return render(request, "app/index.html")
 
 @login_required
-def faces(request: HttpRequest):
+def faces(request: HttpRequest) -> HttpResponse:
+    """
+    Display and process faces for face recognition.
+
+    Args:
+        request: HttpRequest object.
+
+    Returns:
+        HttpResponse object for displaying and processing faces.
+    """
+    user = request.user
+    face_pictures = FacePicture.objects.filter(user=user, person=None)
     if request.method == "POST":
         data = json.loads(request.body)
-        extracted_faces: List[str] = request.session.get("extracted_faces_paths", [])
-        name_list: List[str] = request.session.get("name_list", [])
+        person_id = data.get("selected_person_id")
+        face_picture_id = data.get("current_face_picture_id")
 
-        if request.method == "POST":
-            
-            data: Dict[str, str] = json.loads(request.body)
+        person = Person.objects.get(id=person_id)
+        face_picture = FacePicture.objects.get(id=face_picture_id)
+        face_picture.person = person
+        face_picture.save()
 
-            process_selected_name(data.get("selected_name"), data.get("current_image"))
-
-            extracted_faces.pop(0)
-            request.session["extracted_faces"] = extracted_faces
-
-            next_image_url: str = "/" + extracted_faces[0]
+        face_pictures = FacePicture.objects.filter(user=request.user, person=None)
+        next_face_picture = face_pictures.first()
+        next_image_url = next_face_picture.image.url if next_face_picture else None
 
         if next_image_url:
-            return JsonResponse({"status": "continue", "next_image_url": next_image_url, "extracted_faces_paths": extracted_faces})
+            return JsonResponse({"status": "continue", "next_image_url": next_image_url, "next_face_picture_id": next_face_picture.id})
         else:
             return JsonResponse({"status": "success", "message": "All faces processed"})
     else:
         context = {
-            'extracted_faces_paths': request.session.get("extracted_faces_paths", []),
-            'total_faces': request.session.get("total_faces", 0),
-            'name_list': request.session.get("name_list", []),
-            'current_image': request.session.get("extracted_faces_paths", [])[0],
+            'face_pictures': face_pictures,
+            'total_faces': len(face_pictures),
+            'name_list': list(Person.objects.filter(user=user)),
+            'current_face_picture': face_pictures.first(),
         }
         return render(request, "app/faces.html", context)

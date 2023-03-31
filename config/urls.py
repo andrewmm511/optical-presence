@@ -9,7 +9,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index, name='index'),
     path('faces/', views.faces, name='faces'),
-    path('test/', views.test, name='test'),
     path('register_people/', views.register_people, name='register_people'),
     path('upload/', views.upload, name='upload'),
     path('signup/', views.signup, name='signup'),

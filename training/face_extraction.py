@@ -9,9 +9,11 @@ from django.core.files.base import ContentFile
 from mtcnn import MTCNN
 from PIL import Image
 from app.models import FacePicture
+import tensorflow as tf
 
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_DISABLE_MKL'] = '1' 
+os.environ['TF_DISABLE_MPS'] = '1'
 
 def process_image(file, img_size, confidence_threshold, temp_folder, face_detector, user):
     img = np.array(Image.open(file))
