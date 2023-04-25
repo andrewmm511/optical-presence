@@ -139,22 +139,34 @@ def faces(request: HttpRequest) -> HttpResponse:
     """
     user = request.user
     face_pictures = FacePicture.objects.filter(user=user, person=None)
+    classified_faces = FacePicture.objects.filter(user=user).exclude(person=None)
     if request.method == "POST":
-        data = json.loads(request.body)
-        person_id = data.get("selected_person_id")
-        face_picture_id = data.get("current_face_picture_id")
+        body = json.loads(request.body.decode('utf-8'))
+        person_id = body.get("selected_person_id")
+        face_picture_id = body.get("current_face_picture_id")
 
-        person = Person.objects.get(id=person_id)
         face_picture = FacePicture.objects.get(id=face_picture_id)
-        face_picture.person = person
-        face_picture.save()
+        if person_id is not None:
+            person = Person.objects.get(id=person_id)
+            face_picture.person = person
+            face_picture.save()
+        else:
+            person = None
+            face_picture.delete()
+            face_picture = None
 
         face_pictures = FacePicture.objects.filter(user=request.user, person=None)
         next_face_picture = face_pictures.first()
         next_image_url = next_face_picture.image.url if next_face_picture else None
 
         if next_image_url:
-            return JsonResponse({"status": "continue", "next_image_url": next_image_url, "next_face_picture_id": next_face_picture.id})
+            return JsonResponse({"status": "continue",
+                                 "next_image_url": next_image_url,
+                                 "next_face_picture_id": next_face_picture.id,
+                                 "person_name": person.name if person else None,
+                                 "person_id": person_id,
+                                 "processed_faces_count": len(face_pictures),
+                                 "face_image_url": face_picture.image.url if face_picture else None,})
         else:
             return JsonResponse({"status": "success", "message": "All faces processed"})
     else:
@@ -163,5 +175,6 @@ def faces(request: HttpRequest) -> HttpResponse:
             'total_faces': len(face_pictures),
             'name_list': list(Person.objects.filter(user=user)),
             'current_face_picture': face_pictures.first(),
+            'classified_faces': classified_faces,
         }
         return render(request, "app/faces.html", context)

@@ -77,7 +77,7 @@
     }
 
     .loader {
-        display: flex;
+        display: none;
         justify-content: center;
         align-items: center;
         position: fixed;
@@ -85,8 +85,9 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: rgba(0, 0, 0, 0);
         z-index: 9999;
+        transition: background-color 0.5s ease;
     }
 
     .spinner {
@@ -125,9 +126,26 @@
     .processing-text {
         color: #00d8d2;
         font-size: 16px;
-        margin-top: 100px;
         text-align: center;
         position: relative;
+        display: inline;
+        margin-right: 2px;
+        vertical-align: bottom;
+    }
+
+    .cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background-color: #00d8d2;
+        animation: blink 1s steps(1) infinite;
+        vertical-align: bottom;
+    }
+
+    @keyframes blink {
+        50% {
+            opacity: 0;
+        }
     }
 
     /* Define separate animations for each element with different delays */
@@ -250,33 +268,7 @@
     </div>
 </div>
 
-<div id="loader" class="loader" style="display: none;">
-    <svg class="face-loader" viewBox="0 0 100 100" width="60" height="60">
-        <!-- Add a unique class to each element for individual animations -->
-        <polygon class="face-outline" points="50,1 95,25 81,87 19,87 5,25" fill="none" stroke="#00d8d2"
-            stroke-width="2"></polygon>
-        <line class="face-centerline" x1="50" y1="1" x2="50" y2="87" stroke="#00d8d2" stroke-width="2"></line>
-        <circle class="left-eye" cx="30" cy="43" r="2" fill="#00d8d2"></circle>
-        <circle class="right-eye" cx="70" cy="43" r="2" fill="#00d8d2"></circle>
-        <path class="mouth" d="M25,60 Q50,75,75,60" fill="none" stroke="#00d8d2" stroke-width="2"></path>
-
-        <!-- Additional lines and nodes for a neural net feel -->
-        <line class="horizontal-top" x1="5" y1="25" x2="95" y2="25" stroke="#00d8d2" stroke-width="1"></line>
-        <line class="horizontal-bottom" x1="19" y1="87" x2="81" y2="87" stroke="#00d8d2" stroke-width="1"></line>
-        <line class="horizontal-middle" x1="30" y1="43" x2="70" y2="43" stroke="#00d8d2" stroke-width="1"></line>
-
-        <circle class="top-left" cx="25" cy="25" r="1.5" fill="#00d8d2"></circle>
-        <circle class="top-right" cx="75" cy="25" r="1.5" fill="#00d8d2"></circle>
-        <circle class="mid-left" cx="40" cy="43" r="1.5" fill="#00d8d2"></circle>
-        <circle class="mid-right" cx="60" cy="43" r="1.5" fill="#00d8d2"></circle>
-        <circle class="bottom" cx="50" cy="87" r="1.5" fill="#00d8d2"></circle>
-    </svg>
-    <p class="processing-text">Uploading data...</p>
-</div>
-
 {% endblock card %}
-
-
 
 {% block javascript %}
 {{ block.super }}
@@ -297,24 +289,71 @@
 
     }
 
-    function submitPhotos() {
-        const loader = document.getElementById('loader');
-        const files = this.files;
-        if (files.length > 0) {
+    async function submitPhotos() {
+        const input = document.getElementById('file-input');
+        const fileCount = input.files.length;
+        if (fileCount > 0) {
+            const loader = createLoaderElement();
+            document.body.appendChild(loader);
             loader.style.display = 'flex';
-
-            // Make a POST request to Django
-            // After the response, hide the loader
-            loader.style.display = 'none';
             setTimeout(() => {
-                document.querySelector('.processing-text').textContent = 'Analyzing faces...';
-            }, 3000);
+                loader.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+            }, 10);
 
-            setTimeout(() => {
-                document.querySelector('.processing-text').textContent = 'Finalizing results...';
-            }, 6000);
+            const processingTextElement = document.querySelector('.processing-text');
+            processingTextElement.textContent = '';
+
+            await typeEffect(processingTextElement, 'Uploading data...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await backspaceEffect(processingTextElement);
+
+            await typeEffect(processingTextElement, 'Analyzing faces...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await backspaceEffect(processingTextElement);
+
+            await typeEffect(processingTextElement, 'Finalizing results...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            await backspaceEffect(processingTextElement);
         }
     }
+
+
+
+    function createLoaderElement() {
+        const loader = document.createElement('div');
+        loader.id = 'loader';
+        loader.className = 'loader';
+        loader.innerHTML = `
+        <svg class="face-loader" viewBox="0 0 100 100" width="60" height="60">
+            <path id="path1" fill="none" stroke="black" d="M10,80 C40,10 60,10 90,80" />
+            <path id="path2" fill="none" stroke="black" d="M10,20 L90,20" />
+        </svg>
+        <p class="processing-text"></p>
+        <span class="cursor"></span>
+    `;
+        return loader;
+    }
+
+
+    async function typeEffect(element, text, delay = 80) {
+        const cursor = document.querySelector('.cursor');
+        for (let i = 0; i < text.length; i++) {
+            element.textContent += text.charAt(i);
+            element.parentNode.insertBefore(cursor, element.nextSibling);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+    async function backspaceEffect(element, delay = 30) {
+        const cursor = document.querySelector('.cursor');
+        for (let i = element.textContent.length - 1; i >= 0; i--) {
+            element.textContent = element.textContent.slice(0, i);
+            element.parentNode.insertBefore(cursor, element.nextSibling);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+
 
 
 </script>
