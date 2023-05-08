@@ -1,5 +1,6 @@
 import json
-from typing import Dict, List
+import socket
+from ipaddress import ip_address
 
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -9,9 +10,74 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 
 from training import face_extraction
-from utils import get_next_image_url, process_selected_name
 
-from .models import Person, FacePicture
+from .models import FacePicture, IPCamera, Person
+
+def is_valid_rtsp_stream(ip: str, port: int) -> bool:
+    # Create a socket object
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        # Connect to the IP address and port number
+        s.connect((ip, port))
+
+        # Send a basic RTSP request to check if the stream is valid
+        s.send(b"OPTIONS rtsp://"+ip.encode()+b":%d RTSP/1.0\r\n\r\n" % port)
+
+        # Wait for a response from the server
+        response = s.recv(1024)
+
+        # Check if the response contains "RTSP" (indicating a valid stream)
+        if b"RTSP" in response:
+            return True
+        else:
+            return False
+
+    except:
+        return False
+
+    finally:
+        # Close the socket connection
+        s.close()
+
+def home(request: HttpRequest) -> HttpResponse:
+    return render(request, 'app/home.html')
+
+def dashboard(request: HttpRequest) -> HttpResponse:
+    return render(request, 'app/dashboard.html')
+
+@login_required
+def cameras(request: HttpRequest) -> HttpResponse:
+    if request.method == 'POST':
+        body = json.loads(request.body.decode('utf-8'))
+        ip = body.get("domain")
+        port = int(body.get("port"))
+
+        if not request.user.is_authenticated:
+            return JsonResponse({'status': 'error', 'message': 'User not authenticated'})
+
+        # Check IP validity
+        try:
+            ip_address(ip)
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': f"Invalid IP address: {ip}"})
+
+        # Check if the port is valid
+        if not 0 < port <= 65535:
+            return JsonResponse({'status': 'error', 'message': f"Invalid port: {port}"})
+
+        # Check the RTSP stream
+        if not is_valid_rtsp_stream(ip, port):
+            return JsonResponse({'status': 'error', 'message': f"Unable to connect to the RTSP stream: {ip}:{port}"})
+
+        # Add the camera to the model
+        new_camera = IPCamera(user=request.user, ip=ip, port=port, connected=True)
+        new_camera.save()
+
+        return JsonResponse({'status': 'success'})
+    else:
+        clickable_step_numbers = [1]
+        return render(request, 'app/add_cameras.html', {'clickable_step_numbers': clickable_step_numbers})
 
 
 def signup(request: HttpRequest) -> HttpResponse:

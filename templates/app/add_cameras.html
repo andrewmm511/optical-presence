@@ -1,0 +1,585 @@
+{% extends "common/setup_flow/setup.html" %}
+{% load custom_tags %}
+
+{% block css %}
+{{ block.super }}
+<style>
+    .input-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+
+    .camera-input {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .camera-input input,
+    .camera-input select {
+        font-family: 'Roboto', sans-serif;
+        font-size: 16px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        width: 100%;
+        appearance: none;
+        background-color: #ffffff;
+    }
+
+    .camera-input input#camera-custom-room {
+        display: none;
+    }
+
+    .add-camera-btn {
+        font-family: 'Roboto', sans-serif;
+        color: #ffffff;
+        background-color: #00d8d2;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+
+    .add-camera-btn:hover {
+        background-color: #27bdb2;
+    }
+
+    .camera-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .camera-item {
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .camera-item span {
+        font-family: 'Roboto', sans-serif;
+        font-size: 16px;
+    }
+
+    .remove-camera-btn {
+        color: #FF0000;
+        cursor: pointer;
+    }
+
+    .remove-camera-btn:hover {
+        color: #CC0000;
+    }
+
+    .shake {
+        animation: shake 0.5s;
+        animation-iteration-count: 1;
+    }
+
+    @keyframes shake {
+        0% {
+            transform: translate(0px);
+        }
+
+        10% {
+            transform: translate(-5px);
+        }
+
+        20% {
+            transform: translate(5px);
+        }
+
+        30% {
+            transform: translate(-5px);
+        }
+
+        40% {
+            transform: translate(5px);
+        }
+
+        50% {
+            transform: translate(-5px);
+        }
+
+        60% {
+            transform: translate(5px);
+        }
+
+        70% {
+            transform: translate(-5px);
+        }
+
+        80% {
+            transform: translate(5px);
+        }
+
+        90% {
+            transform: translate(-5px);
+        }
+
+        100% {
+            transform: translate(0px);
+        }
+    }
+
+    .help-btn {
+        background-color: transparent;
+        border: none;
+        color: #00c0b9;
+        font-size: 24px;
+        cursor: pointer;
+        padding-left: 5px;
+        vertical-align: middle;
+    }
+
+    .help-btn:hover {
+        color: #008d85;
+    }
+
+    .popup {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1001;
+        background-color: #2e3141;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 80%;
+        max-width: 500px;
+        max-height: 80%;
+        overflow-y: auto;
+    }
+
+    .popup-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #00c0b9;
+    }
+
+    .add-camera-btn:disabled {
+        background-color: #a0a0a0;
+        cursor: not-allowed;
+    }
+
+    .popup-content {
+        color: #ffffff;
+        line-height: 1.5;
+    }
+
+    .popup-content a {
+        color: #00c0b9;
+        text-decoration: none;
+    }
+
+    .popup-content a:hover {
+        text-decoration: underline;
+    }
+
+    .external-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .popup-close {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: transparent;
+        border: none;
+        font-size: 24px;
+        color: #ffffff;
+        cursor: pointer;
+    }
+
+    .popup-close:hover {
+        color: #00c0b9;
+    }
+
+    .fab {
+        font-size: 1.2rem;
+        margin-right: 5px;
+    }
+
+    .expandable-section {
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+        background-color: rgba(46, 49, 65, 0.8);
+        padding: 10px;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .expandable-section:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .expand-icon {
+        margin-left: 10px;
+        font-size: 1rem;
+        color: #00c0b9;
+    }
+
+
+    .expandable-section-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-in-out;
+    }
+
+    .fab.fa-hikvision {
+        color: #d81e05;
+    }
+
+    .fab.fa-dahua {
+        color: #d80d24;
+    }
+
+    .fab.fa-lorex {
+        color: #1d72aa;
+    }
+
+    .fab.fa-foscam {
+        color: #e60012;
+    }
+
+    .fab.fa-axis {
+        color: #0168b3;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .dropdown-select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background: none;
+        border: none;
+    }
+    
+    .dropdown-caret {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+    }
+
+    .overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+    }
+</style>
+{% endblock %}
+
+{% block progress_indicator %}
+{% with active_step=4 clickable_steps=clickable_step_numbers %}
+{{ block.super }}
+{% endwith%}
+{% endblock %}
+
+{% block card_title %}IP Cameras{% endblock %}
+{% block card_subtitle %}Step 2: Add IP Cameras{% endblock %}
+{% block card %}
+<div class="popup" id="popup">
+    <button class="popup-close" onclick="togglePopup()"><i class="fas fa-times icon"></i></button>
+    <h3 class="popup-title">Finding IP Camera Information</h3>
+    <p class="popup-content">
+        To find the domain or IP address and port for your IP camera, follow these steps for common IP cameras:
+    </p>
+    <ol class="popup-content">
+        <li>Consult the camera's user manual or the manufacturer's website for instructions specific to your camera
+            model.</li>
+        <li>Use a network scanner tool or the camera's companion app to locate the camera's IP address on your network.
+        </li>
+        <li>Open a web browser and enter the camera's IP address into the address bar.</li>
+        <li>Log in to the camera's web interface using the default username and password provided in the manual or on
+            the manufacturer's website.</li>
+        <li>Find the RTSP stream settings in the camera's web interface and note the domain or IP address and port
+            number.</li>
+    </ol>
+    <div class="expandable-section" onclick="toggleSection('nest')">
+        <h4 class="popup-content">Nest Cameras</h4>
+        <i class="expand-icon fas fa-plus"></i>
+    </div>
+    <div class="expandable-section-content" id="nest">
+        <p class="popup-content">Nest cameras do not natively support RTSP streaming. However, you can use third-party
+            software like <a href="https://github.com/dend/foggycam" target="_blank" class="external-link">Foggycam</a>
+            to capture and save video feeds from Nest cameras locally. Please note that using third-party software may
+            violate Nest's terms of service.</p>
+    </div>
+    <div class="expandable-section" onclick="toggleSection('amcrest')">
+        <h4 class="popup-content">Amcrest Cameras</h4>
+        <i class="expand-icon fas fa-plus"></i>
+    </div>
+    <div class="expandable-section-content" id="amcrest">
+        <p class="popup-content">To configure an RTSP stream for an Amcrest Camera, follow these steps:</p>
+        <ol class="popup-content">
+            <li>Access your Amcrest camera's web interface by entering the camera's IP address into the address bar of
+                your web browser.</li>
+            <li>Log in using the default username and password provided in the manual or on the manufacturer's website.
+                The default username is usually "admin", and the default password can be found in the manual or on the
+                camera itself.</li>
+            <li>Click on the "Setup" tab in the top menu.</li>
+            <li>In the left-hand menu, click on "Camera" and then "Video".</li>
+            <li>Locate the "RTSP" section on the page. Note the RTSP port number (default is 554) and the available RTSP
+                streams.</li>
+            <li>Choose the stream you want to use (e.g., Main Stream or Sub Stream) and note the stream URL. The RTSP
+                URL format is generally as follows:
+                rtsp://[camera_ip_address]:[port]/cam/realmonitor?channel=[channel]&subtype=[stream]</li>
+        </ol>
+        <p class="popup-content">Replace [camera_ip_address], [port], [channel], and [stream] with the appropriate
+            values for your camera. For example, if your camera's IP address is 192.168.1.100, the RTSP port is 554, and
+            you want to use the Main Stream (subtype=0), the RTSP URL would be:</p>
+        <p class="popup-content">rtsp://192.168.1.100:554/cam/realmonitor?channel=1&subtype=0</p>
+    </div>
+    <div class="expandable-section" onclick="toggleSection('foscam')">
+        <h4 class="popup-content">Foscam Cameras</h4>
+        <i class="expand-icon fas fa-plus"></i>
+    </div>
+    <div class="expandable-section-content" id="foscam">
+        <p class="popup-content">To configure an RTSP stream for a Foscam Camera, follow these steps:</p>
+        <ol class="popup-content">
+            <li>Access your Foscam camera's web interface by entering the camera's IP address into the address bar of
+                your web browser.</li>
+            <li>Log in using the default username and password provided in the manual or on the manufacturer's website.
+                The default username is usually "admin", and the default password can be found in the manual or on the
+                camera itself.</li>
+            <li>Click on the "Settings" tab in the top menu.</li>
+            <li>In the left-hand menu, click on "Network" and then "IP Configuration". Note the RTSP port number
+                (default is 554).</li>
+            <li>The RTSP URL format for Foscam cameras is generally as follows:
+                rtsp://[username]:[password]@[camera_ip_address]:[port]/videoMain</li>
+        </ol>
+        <p class="popup-content">Replace [username], [password], [camera_ip_address], and [port] with the appropriate
+            values for your camera. For example, if your camera's IP address is 192.168.1.100, the RTSP port is 554, and
+            your username and password are "admin" and "password123", the RTSP URL would be:</p>
+        <p class="popup-content">rtsp://admin:password123@192.168.1.100:554/videoMain</p>
+    </div>
+</div>
+
+
+
+<p class="instructions">Enter the domain or IP address and path where the RTSP streams from each camera you want to
+    add.
+    <button class="help-btn" onclick="togglePopup()"><i class="fas fa-question-circle"></i></button>
+</p>
+
+{% csrf_token %}
+<div class="input-container">
+    <div class="camera-input">
+        <input type="text" id="camera-domain" placeholder="RTSP address (e.g. rtsp://192.168.1.100:554/camera)" oninput="validateInput()">
+        <div id="camera-room-dropdown">
+            <select id="camera-room" onchange="roomSelect(this)" class="dropdown-select">
+                <option value="">Select room</option>
+                <option value="living_room">Living Room</option>
+                <option value="kitchen">Kitchen</option>
+                <option value="bedroom">Bedroom</option>
+                <option value="office">Office</option>
+                <option value="garage">Garage</option>
+                <option value="other">Other</option>
+            </select>
+            <span class="dropdown-caret">&#9660;</span>
+        </div>
+        <div id="camera-custom-room-container" style="display:none; width: 100%;">
+            <input type="text" id="camera-custom-room" placeholder="Custom room">
+            <button type="button" onclick="backToList()" class="back-to-list-btn">Back to list</button>
+        </div>
+        <button class="add-camera-btn" onclick="submitCameras()" id="add-camera-btn" disabled>Add Camera</button>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block javascript %}
+{{ block.super }}
+<script>
+    const cameraList = document.getElementById('camera-list');
+    let cameras = [];
+
+    function validateInput() {
+        const domainInput = document.getElementById('camera-domain');
+        const roomInput = document.getElementById('camera-room');
+        const addCameraBtn = document.getElementById('add-camera-btn');
+        const domainRegex = /^(rtsp?:\/\/)?(([\da-z\.-]+)\.([a-z\.]{2,6})|(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(?::\d{1,5})?([\/\w \.-]*)*\/?$/;
+    
+        if (!domainRegex.test(domainInput.value) || roomSelect.value === "") {
+            domainInput.style.borderColor = !domainRegex.test(domainInput.value) ? 'red' : '';
+            addCameraBtn.disabled = true;
+        } else {
+            domainInput.style.borderColor = '';
+            addCameraBtn.disabled = false;
+        }
+    }
+    
+    function roomSelect(selectElement) {
+        const customRoomContainer = document.getElementById('camera-custom-room-container');
+        const customRoomInput = document.getElementById('camera-custom-room');
+        const roomDropdown = document.getElementById('camera-room-dropdown');
+
+        if (selectElement.value === 'other') {
+            roomDropdown.style.display = 'none';
+            customRoomContainer.style.display = 'block';
+            customRoomInput.required = true;
+            customRoomInput.focus();
+        } else {
+            customRoomContainer.style.display = 'none';
+            customRoomInput.required = false;
+        }
+        validateInput();
+    }
+    
+    document.getElementById('camera-room').addEventListener('change', validateInput);
+
+
+
+    function togglePopup() {
+        var overlay = document.getElementById("overlay");
+        var popup = document.getElementById('popup');
+
+        if (!overlay) {
+            overlay = document.createElement("div");
+            overlay.setAttribute("id", "overlay");
+            overlay.setAttribute("class", "overlay");
+            document.body.appendChild(overlay);
+        }
+
+        if (popup.style.display === "none" || popup.style.display === "") {
+            popup.style.display = "block";
+            overlay.style.display = "block";
+
+            var body = document.getElementsByTagName('body')[0];
+            body.appendChild(popup);
+
+            setTimeout(function () {
+                popup.style.opacity = "1";
+            }, 100);
+        } else {
+            popup.style.opacity = "0";
+
+            setTimeout(function () {
+                popup.style.display = "none";
+                overlay.style.display = "none";
+            }, 300);
+        }
+    }
+
+    function toggleSection(id) {
+        const section = document.getElementById(id);
+        const expandIcon = section.previousElementSibling.querySelector(".expand-icon");
+        if (section.style.maxHeight === "0px") {
+            section.style.maxHeight = section.scrollHeight + "px";
+            expandIcon.classList.remove("fa-plus");
+            expandIcon.classList.add("fa-minus");
+        } else {
+            section.style.maxHeight = "0px";
+            expandIcon.classList.remove("fa-minus");
+            expandIcon.classList.add("fa-plus");
+        }
+    }
+
+    function addCamera() {
+        const domain = document.getElementById('camera-domain').value;
+        const location = document.getElementById('camera-room').value;
+
+        if (domain && port) {
+            const camera = { domain, port };
+            cameras.push(camera);
+
+            const cameraItem = document.createElement('div');
+            cameraItem.classList.add('camera-item');
+            const cameraInfo = document.createElement('span');
+            cameraInfo.textContent = `Domain/IP: ${camera.domain}, Port: ${camera.port}`;
+            cameraItem.appendChild(cameraInfo);
+
+            const removeBtn = document.createElement('i');
+            removeBtn.classList.add('fas', 'fa-trash', 'remove-camera-btn');
+            removeBtn.addEventListener('click', () => {
+                cameraList.removeChild(cameraItem);
+                cameras = cameras.filter(c => c.domain !== camera.domain || c.port !== camera.port);
+            });
+            cameraItem.appendChild(removeBtn);
+
+            cameraList.appendChild(cameraItem);
+
+            document.getElementById('camera-domain').value = '';
+            document.getElementById('camera-room').value = '';
+        }
+    }
+
+    async function submitCameras() {
+        const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const submitButton = document.querySelector('.add-camera-btn');
+        const cameraInput = document.querySelector('.camera-input');
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+
+        const domain = document.getElementById('camera-domain').value;
+        const location = document.getElementById('camera-room').value;
+
+        try {
+            const response = await fetch('/add_cameras/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify({
+                    "domain": domain,
+                    "location": location
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    addCamera();
+                } else {
+                    cameraInput.classList.add('shake');
+                    setTimeout(() => cameraInput.classList.remove('shake'), 500);
+                    // Add your tooltip implementation here with the result.message
+                }
+            } else {
+                console.error('Error submitting cameras:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error submitting cameras:', error);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit';
+        }
+    }
+
+
+</script>
+{% endblock %}

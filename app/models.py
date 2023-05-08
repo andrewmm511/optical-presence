@@ -13,6 +13,11 @@ class Person(models.Model):
     pic_count = models.IntegerField(default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='persons')
 
+    def update_location_and_timestamp(self, camera, timestamp):
+        self.location = camera.location
+        self.last_seen = timestamp
+        self.save()
+
     def __str__(self):
         return self.name
 
@@ -24,3 +29,18 @@ class FacePicture(models.Model):
 
     def __str__(self):
         return f"{self.person.name if self.person else 'Unclassified'} - {self.id}"
+
+class IPCamera(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    location = models.CharField(max_length=100, default='Unknown')
+    ip = models.GenericIPAddressField()
+    port = models.PositiveIntegerField()
+    connected = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.ip}:{self.port}"
+    
+class RecognitionEvent(models.Model):
+    person = models.ForeignKey(Person, on_delete=models.CASCADE)
+    camera = models.ForeignKey(IPCamera, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
